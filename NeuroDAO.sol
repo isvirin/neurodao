@@ -79,8 +79,8 @@ contract Crowdsale is owned {
 contract Token is Crowdsale {
     
     string  public standard    = 'Token 0.1';
-    string  public name        = 'NDAO';
-    string  public symbol      = "ND";
+    string  public name        = 'NeuroDAO';
+    string  public symbol      = "NDAO";
     uint8   public decimals    = 0;
 
     mapping (address => mapping (address => uint256)) public allowed;
