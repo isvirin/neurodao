@@ -165,6 +165,7 @@ contract NeuroDAO is TokenMigration {
     }
     
     function killMe() public onlyOwner {
+        require(totalSupply == 0);
         selfdestruct(owner);
     }
 }
