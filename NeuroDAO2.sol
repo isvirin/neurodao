@@ -242,3 +242,39 @@ contract NeuroDAO is TokenMigration {
         selfdestruct(owner);
     }
 }
+
+contract Adapter is owned {
+    
+    address public neuroDAO;
+    address public erc20contract;
+    address public masterHolder;
+    
+    mapping (address => bool) public alreadyUsed;
+    
+    function Adapter(address _neuroDAO, address _erc20contract, address _masterHolder)
+        payable owned() {
+        neuroDAO = _neuroDAO;
+        erc20contract = _erc20contract;
+        masterHolder = _masterHolder;
+    }
+    
+    function killMe() public onlyOwner {
+        selfdestruct(owner);
+    }
+ 
+    /**
+     * @brief Move tokens int erc20contract to NDAO tokens holder
+     * 
+     * @preconditions
+     * # Freeze balances in NeuroDAO smartcontract by calling freezeTheMoment() function.
+     * # Allow transferFrom masterHolder in ERC20 smartcontract by calling approve() function
+     *   from masterHolder address, gives this contract address as spender parameter.
+     * # ERC20 smartcontract must have enougth tokens on masterHolder balance.
+     */
+    function giveMeTokens() public {
+        require(!alreadyUsed[msg.sender]);
+        uint balance = NeuroDAO(neuroDAO).freezedBalanceOf(msg.sender);
+        ERC20(erc20contract).transferFrom(masterHolder, msg.sender, balance);
+        alreadyUsed[msg.sender] = true;
+    }
+}
