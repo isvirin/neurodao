@@ -61,10 +61,15 @@ contract ERC20 {
     event Transfer(address indexed from, address indexed to, uint value);
 }
 
-contract Crowdsale is owned, ERC20 {
-    
+contract ManualMigration is owned, ERC20 {
+
     uint    public freezedMoment;
     address public original;
+
+    modifier enabled {
+        require(original == 0);
+        _;
+    }
 
     struct TokenHolder {
         uint balance;
@@ -73,7 +78,7 @@ contract Crowdsale is owned, ERC20 {
     }
     mapping (address => TokenHolder) public holders;
 
-    function Crowdsale(address _original) payable owned() {
+    function ManualMigration(address _original) payable owned() {
         original = _original;
         totalSupply = ERC20(original).totalSupply();
         holders[this].balance = ERC20(original).balanceOf(original);
@@ -81,7 +86,33 @@ contract Crowdsale is owned, ERC20 {
         Transfer(this, original, holders[original].balance);
     }
 
-    function () payable {
+    function migrateManual(address _who) onlyOwner {
+        require(original != 0);
+        require(holders[_who].balance == 0);
+        uint balance = ERC20(original).balanceOf(_who);
+        holders[_who].balance = balance;
+        holders[original].balance -= balance;
+        Transfer(original, _who, balance);
+    }
+    
+    function sealManualMigration() onlyOwner {
+        require(holders[original].balance == 0);
+        delete original;
+    }
+
+    function beforeBalanceChanges(address _who) internal {
+        if (holders[_who].balanceUpdateTime <= freezedMoment) {
+            holders[_who].balanceUpdateTime = now;
+            holders[_who].balanceBeforeUpdate = holders[_who].balance;
+        }
+    }
+}
+
+contract Crowdsale is ManualMigration {
+    
+    function Crowdsale(address _original) payable ManualMigration(_original) {}
+
+    function () payable enabled {
         require(holders[this].balance > 0);
         uint256 tokens = 5000 * msg.value / 1000000000000000000;
         if (tokens > holders[this].balance) {
@@ -96,13 +127,6 @@ contract Crowdsale is owned, ERC20 {
         holders[msg.sender].balance += tokens;
         holders[this].balance -= tokens;
         Transfer(this, msg.sender, tokens);
-    }
-
-    function beforeBalanceChanges(address _who) internal {
-        if (holders[_who].balanceUpdateTime <= freezedMoment) {
-            holders[_who].balanceUpdateTime = now;
-            holders[_who].balanceBeforeUpdate = holders[_who].balance;
-        }
     }
 }
 
@@ -123,7 +147,7 @@ contract Token is Crowdsale {
         return holders[_who].balance;
     }
 
-    function transfer(address _to, uint256 _value) public {
+    function transfer(address _to, uint256 _value) public enabled {
         require(holders[msg.sender].balance >= _value);
         require(holders[_to].balance + _value >= holders[_to].balance); // overflow
         beforeBalanceChanges(msg.sender);
@@ -133,7 +157,7 @@ contract Token is Crowdsale {
         Transfer(msg.sender, _to, _value);
     }
     
-    function transferFrom(address _from, address _to, uint256 _value) public {
+    function transferFrom(address _from, address _to, uint256 _value) public enabled {
         require(holders[_from].balance >= _value);
         require(holders[_to].balance + _value >= holders[_to].balance); // overflow
         require(allowed[_from][msg.sender] >= _value);
@@ -155,7 +179,7 @@ contract Token is Crowdsale {
         return allowed[_owner][_spender];
     }
     
-    function burn(uint256 _value) public {
+    function burn(uint256 _value) public enabled {
         require(holders[msg.sender].balance >= _value);
         beforeBalanceChanges(msg.sender);
         holders[msg.sender].balance -= _value;
@@ -168,30 +192,14 @@ contract MigrationAgent {
     function migrateFrom(address _from, uint256 _value);
 }
 
-contract MigrationFrom is Token, MigrationAgent {
-
-    function MigrationFrom(address _original) payable Token(_original) {
-    }
-    
-    function migrateFrom(address _from, uint256 _value) public {
-        require(original == msg.sender);
-        require(holders[_from].balance + _value > holders[_from].balance); // overflow?
-        beforeBalanceChanges(_from);
-        beforeBalanceChanges(original);
-        holders[_from].balance += _value;
-        holders[original].balance -= _value;
-        Transfer(original, _from, _value);
-    }
-}
-
-contract TokenMigration is MigrationFrom {
+contract TokenMigration is Token {
     
     address public migrationAgent;
     uint256 public totalMigrated;
 
     event Migrate(address indexed from, address indexed to, uint256 value);
 
-    function TokenMigration(address _original) payable MigrationFrom(_original) {}
+    function TokenMigration(address _original) payable Token(_original) {}
 
     // Migrate _value of tokens to the new token contract
     function migrate() external {
@@ -208,7 +216,7 @@ contract TokenMigration is MigrationFrom {
         Migrate(msg.sender, migrationAgent, value);
     }
 
-    function setMigrationAgent(address _agent) external onlyOwner {
+    function setMigrationAgent(address _agent) external onlyOwner enabled {
         require(migrationAgent == 0);
         migrationAgent = _agent;
     }
