@@ -237,7 +237,7 @@ contract NeuroDAO is TokenMigration {
     /** @brief Get balance of _who for freezed moment
      *  @see freezeTheMoment()
      */
-    function freezedBalanceOf(address _who) public returns(uint) {
+    function freezedBalanceOf(address _who) constant public returns(uint) {
         if (holders[_who].balanceUpdateTime <= freezedMoment) {
             return holders[_who].balance;
         } else {
