@@ -15,6 +15,8 @@ You should have received a copy of the GNU lesser General Public License
 along with the NeuroDAO Contract. If not, see <http://www.gnu.org/licenses/>.
 
 @author Ilya Svirin <i.svirin@nordavind.ru>
+
+IF YOU ARE ENJOYED IT DONATE TO 0x3Ad38D1060d1c350aF29685B2b8Ec3eDE527452B ! :)
 */
 
 
@@ -70,6 +72,12 @@ contract ManualMigration is owned, ERC20 {
         require(original == 0);
         _;
     }
+    
+    struct SpecialTokenHolder {
+        uint limit;
+        bool isTeam;
+    }
+    mapping (address => SpecialTokenHolder) public specials;
 
     struct TokenHolder {
         uint balance;
@@ -86,11 +94,12 @@ contract ManualMigration is owned, ERC20 {
         Transfer(this, original, holders[original].balance);
     }
 
-    function migrateManual(address _who) onlyOwner {
+    function migrateManual(address _who, bool _isTeam) onlyOwner {
         require(original != 0);
         require(holders[_who].balance == 0);
         uint balance = ERC20(original).balanceOf(_who);
         holders[_who].balance = balance;
+        specials[_who] = SpecialTokenHolder({limit: balance, isTeam:_isTeam});
         holders[original].balance -= balance;
         Transfer(original, _who, balance);
     }
@@ -125,30 +134,74 @@ contract Crowdsale is ManualMigration {
         beforeBalanceChanges(msg.sender);
         beforeBalanceChanges(this);
         holders[msg.sender].balance += tokens;
+        specials[msg.sender].limit += tokens;
         holders[this].balance -= tokens;
         Transfer(this, msg.sender, tokens);
     }
 }
 
 contract Token is Crowdsale {
-    
+
     string  public standard    = 'Token 0.1';
     string  public name        = 'NeuroDAO';
     string  public symbol      = "NDAO";
     uint8   public decimals    = 0;
 
+    uint    public startTime;
+
     mapping (address => mapping (address => uint256)) public allowed;
 
     event Burned(address indexed owner, uint256 value);
 
-    function Token(address _original) payable Crowdsale(_original) {}
+    function Token(address _original, uint _startTime)
+        payable Crowdsale(_original) {
+        startTime = _startTime;    
+    }
+
+    function availableTokens(address _who) public constant returns (uint _avail) {
+        _avail = holders[_who].balance;
+        uint limit = specials[_who].limit;
+        if (limit != 0) {
+            uint blocked;
+            uint periods = firstYearPeriods();
+            if (specials[_who].isTeam) {
+                if (periods != 0) {
+                    blocked = limit * (500 - periods) / 500;
+                } else {
+                    periods = (now - startTime) / 1 years;
+                    ++periods;
+                    if (periods < 5) {
+                        blocked = limit * (100 - periods * 20) / 100;
+                    }
+                }
+            } else {
+                if (periods != 0) {
+                    blocked = limit * (100 - periods) / 100;
+                }
+            }
+            _avail -= blocked;
+        }
+    }
+    
+    function firstYearPeriods() internal constant returns (uint _periods) {
+        _periods = 0;
+        if (now < startTime + 1 years) {
+            _periods = (now - startTime) / 28 days;
+            ++_periods;
+            if (_periods == 5 || _periods == 6) {
+                _periods = 5;
+            } else if (_periods > 6) {
+                _periods -= 2;
+            }
+        }
+    }
 
     function balanceOf(address _who) constant public returns (uint) {
         return holders[_who].balance;
     }
 
     function transfer(address _to, uint256 _value) public enabled {
-        require(holders[msg.sender].balance >= _value);
+        require(availableTokens(msg.sender) >= _value);
         require(holders[_to].balance + _value >= holders[_to].balance); // overflow
         beforeBalanceChanges(msg.sender);
         beforeBalanceChanges(_to);
@@ -158,7 +211,7 @@ contract Token is Crowdsale {
     }
     
     function transferFrom(address _from, address _to, uint256 _value) public enabled {
-        require(holders[_from].balance >= _value);
+        require(availableTokens(_from) >= _value);
         require(holders[_to].balance + _value >= holders[_to].balance); // overflow
         require(allowed[_from][msg.sender] >= _value);
         beforeBalanceChanges(_from);
@@ -199,7 +252,8 @@ contract TokenMigration is Token {
 
     event Migrate(address indexed from, address indexed to, uint256 value);
 
-    function TokenMigration(address _original) payable Token(_original) {}
+    function TokenMigration(address _original, uint _startTime)
+        payable Token(_original, _startTime) {}
 
     // Migrate _value of tokens to the new token contract
     function migrate() external {
@@ -224,7 +278,8 @@ contract TokenMigration is Token {
 
 contract NeuroDAO is TokenMigration {
 
-    function NeuroDAO(address _original) payable TokenMigration(_original) {}
+    function NeuroDAO(address _original, uint _startTime)
+        payable TokenMigration(_original, _startTime) {}
     
     function withdraw() public onlyOwner {
         owner.transfer(this.balance);
