@@ -284,8 +284,8 @@ contract NeuroDAO is TokenMigration {
         freezedMoment = now;
     }
 
-    /** @brief Get balance of _who for freezed moment
-     *  @see freezeTheMoment()
+    /** Get balance of _who for freezed moment
+     *  freezeTheMoment()
      */
     function freezedBalanceOf(address _who) constant public returns(uint) {
         if (holders[_who].balanceUpdateTime <= freezedMoment) {
@@ -321,9 +321,8 @@ contract Adapter is owned {
     }
  
     /**
-     * @brief Move tokens int erc20contract to NDAO tokens holder
+     * Move tokens int erc20contract to NDAO tokens holder
      * 
-     * @preconditions
      * # Freeze balances in NeuroDAO smartcontract by calling freezeTheMoment() function.
      * # Allow transferFrom masterHolder in ERC20 smartcontract by calling approve() function
      *   from masterHolder address, gives this contract address as spender parameter.
