@@ -186,13 +186,8 @@ contract Token is Crowdsale {
     function firstYearPeriods() internal constant returns (uint _periods) {
         _periods = 0;
         if (now < startTime + 1 years) {
-            _periods = (now - startTime) / 28 days;
-            ++_periods;
-            if (_periods == 5 || _periods == 6) {
-                _periods = 5;
-            } else if (_periods > 6) {
-                _periods -= 2;
-            }
+            uint8[12] memory logic = [1, 2, 3, 4, 4, 4, 5, 6, 7, 8, 9, 10];
+            _periods = logic[(now - startTime) / 28 days];
         }
     }
 
