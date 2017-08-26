@@ -104,8 +104,8 @@ contract ManualMigration is owned, ERC20 {
         Transfer(original, _who, balance);
     }
     
-    function sealManualMigration() onlyOwner {
-        require(holders[original].balance == 0);
+    function sealManualMigration(bool force) onlyOwner {
+        require(force || holders[original].balance == 0);
         delete original;
     }
 
