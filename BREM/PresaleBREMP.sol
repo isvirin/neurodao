@@ -175,10 +175,17 @@ contract Token is Crowdsale {
     mapping (address => mapping (address => uint)) public allowed;
     event Approval(address indexed owner, address indexed spender, uint value);
 
+    // Fix for the ERC20 short address attack
+    modifier onlyPayloadSize(uint size) {
+        require(msg.data.length >= size + 4);
+        _;
+    }
+
     function Token(address _neurodao, uint _etherPrice)
         payable Crowdsale(_neurodao, _etherPrice) {}
 
-    function transfer(address _to, uint256 _value) public enabledState {
+    function transfer(address _to, uint256 _value)
+        public enabledState onlyPayloadSize(2 * 32) {
         require(balanceOf[msg.sender] >= _value);
         require(balanceOf[_to] + _value >= balanceOf[_to]);
         if (holders[_to] != true) {
@@ -190,7 +197,8 @@ contract Token is Crowdsale {
         Transfer(msg.sender, _to, _value);
     }
     
-    function transferFrom(address _from, address _to, uint _value) public enabledState {
+    function transferFrom(address _from, address _to, uint _value)
+        public enabledState onlyPayloadSize(3 * 32) {
         require(balanceOf[_from] >= _value);
         require(balanceOf[_to] + _value >= balanceOf[_to]); // overflow
         require(allowed[_from][msg.sender] >= _value);
