@@ -150,7 +150,7 @@ contract Crowdsale is owned {
             uint freezedBalance = NeuroDAO(neurodao).freezedBalanceOf(msg.sender);
             tokens = (neurodaoTokens / 10) * freezedBalance / 21000000;
             if (freezedBalance >= 1000) {
-                tokens += (neurodaoTokens / 10) * balanceOf[msg.sender] / collectedNDAO;
+                tokens += (9 * neurodaoTokens / 10) * balanceOf[msg.sender] / collectedNDAO;
             }
         }
         require(tokens > 0);
