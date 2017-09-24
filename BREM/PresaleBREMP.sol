@@ -229,10 +229,11 @@ contract PresaleBREMP is Token {
         payable Token(_neurodao, _etherPrice) {}
     
     function withdraw() public onlyOwner {
-        owner.transfer(this.balance);
+        presaleOwner.transfer(this.balance);
     }
     
     function killMe() public onlyOwner {
+        presaleOwner.transfer(this.balance);
         selfdestruct(owner);
     }
 }
