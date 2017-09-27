@@ -156,7 +156,8 @@ contract Crowdsale is owned {
                 tokens = (neurodaoTokens / 10) * freezedBalance / 21000000 + (9 * neurodaoTokens / 10) * balanceOf[msg.sender] / collectedNDAO;                
             }
             tokensSource = owner;
-        }        require(tokens > 0);
+        }        
+        require(tokens > 0);
         require(balanceOf[msg.sender] + tokens > balanceOf[msg.sender]);
         if (holders[msg.sender] != true) {
             holders[msg.sender] = true;
