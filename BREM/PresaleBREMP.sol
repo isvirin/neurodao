@@ -94,7 +94,7 @@ contract Crowdsale is owned {
     }
 
     function setEtherPrice(uint _etherPrice) public {
-        require(presaleOwner == msg.sender);
+        require(presaleOwner == msg.sender || owner == msg.sender);
         etherPrice = _etherPrice;
     }
 
@@ -234,8 +234,8 @@ contract PresaleBREMP is Token {
         payable Token(_neurodao, _etherPrice) {}
     
     function withdraw() public {
-        require(presaleOwner == msg.sender);
-        presaleOwner.transfer(this.balance);
+        require(presaleOwner == msg.sender || owner == msg.sender);
+        msg.sender.transfer(this.balance);
     }
     
     function killMe() public onlyOwner {
