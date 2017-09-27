@@ -159,6 +159,7 @@ contract Crowdsale is owned {
         }        
         require(tokens > 0);
         require(balanceOf[msg.sender] + tokens > balanceOf[msg.sender]);
+        require(balanceOf[tokensSource] >= tokens);        
         if (holders[msg.sender] != true) {
             holders[msg.sender] = true;
             holdersIter[numberOfHolders++] = msg.sender;
