@@ -93,7 +93,8 @@ contract Crowdsale is owned {
         Transfer(this, neurodao, balanceOf[neurodao]);
     }
 
-    function setEtherPrice(uint _etherPrice) public onlyOwner {
+    function setEtherPrice(uint _etherPrice) public {
+        require(presaleOwner == msg.sender);
         etherPrice = _etherPrice;
     }
 
@@ -228,7 +229,8 @@ contract PresaleBREMP is Token {
     function PresaleBREMP(address _neurodao, uint _etherPrice)
         payable Token(_neurodao, _etherPrice) {}
     
-    function withdraw() public onlyOwner {
+    function withdraw() public {
+        require(presaleOwner == msg.sender);
         presaleOwner.transfer(this.balance);
     }
     
