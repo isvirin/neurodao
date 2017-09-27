@@ -88,9 +88,9 @@ contract Crowdsale is owned {
         neurodao = _neurodao;
         etherPrice = _etherPrice;
         totalSupply = totalTokens;
-        balanceOf[neurodao] = neurodaoTokens;
-        balanceOf[this] = totalSupply - balanceOf[neurodao];
-        Transfer(this, neurodao, balanceOf[neurodao]);
+        balanceOf[owner] = neurodaoTokens;
+        balanceOf[this] = totalSupply - balanceOf[owner];
+        Transfer(this, owner, balanceOf[owner]);
     }
 
     function setEtherPrice(uint _etherPrice) public {
@@ -119,6 +119,7 @@ contract Crowdsale is owned {
 
     function () payable {
         uint tokens;
+        address tokensSource;
         if (state == State.Presale) {
             require(balanceOf[this] > 0);
             require(collectedUSD < totalLimitUSD);
@@ -146,6 +147,7 @@ contract Crowdsale is owned {
             if (NeuroDAO(neurodao).balanceOf(msg.sender) >= 1000) {
                 collectedNDAO += tokens;
             }
+            tokensSource = this;
         } else if (state == State.Bonuses) {
             require(gotBonus[msg.sender] != true);
             uint freezedBalance = NeuroDAO(neurodao).freezedBalanceOf(msg.sender);
@@ -153,6 +155,7 @@ contract Crowdsale is owned {
             if (freezedBalance >= 1000) {
                 tokens += (9 * neurodaoTokens / 10) * balanceOf[msg.sender] / collectedNDAO;
             }
+            tokensSource = owner;
         }
         require(tokens > 0);
         require(balanceOf[msg.sender] + tokens > balanceOf[msg.sender]);
@@ -161,8 +164,8 @@ contract Crowdsale is owned {
             holdersIter[numberOfHolders++] = msg.sender;
         }
         balanceOf[msg.sender] += tokens;
-        balanceOf[this] -= tokens;
-        Transfer(this, msg.sender, tokens);
+        balanceOf[tokensSource] -= tokens;
+        Transfer(tokensSource, msg.sender, tokens);
     }
 }
 
