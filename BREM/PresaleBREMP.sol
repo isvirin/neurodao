@@ -150,14 +150,13 @@ contract Crowdsale is owned {
             tokensSource = this;
         } else if (state == State.Bonuses) {
             require(gotBonus[msg.sender] != true);
+            gotBonus[msg.sender] = true;
             uint freezedBalance = NeuroDAO(neurodao).freezedBalanceOf(msg.sender);
-            tokens = (neurodaoTokens / 10) * freezedBalance / 21000000;
             if (freezedBalance >= 1000) {
-                tokens += (9 * neurodaoTokens / 10) * balanceOf[msg.sender] / collectedNDAO;
+                tokens = (neurodaoTokens / 10) * freezedBalance / 21000000 + (9 * neurodaoTokens / 10) * balanceOf[msg.sender] / collectedNDAO;                
             }
             tokensSource = owner;
-        }
-        require(tokens > 0);
+        }        require(tokens > 0);
         require(balanceOf[msg.sender] + tokens > balanceOf[msg.sender]);
         if (holders[msg.sender] != true) {
             holders[msg.sender] = true;
