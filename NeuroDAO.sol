@@ -25,7 +25,7 @@ contract owned {
     address public owner;
     address public newOwner;
 
-    function owned() payable {
+    function owned() public payable {
         owner = msg.sender;
     }
     
@@ -53,14 +53,14 @@ contract Crowdsale is owned {
 
     event Transfer(address indexed from, address indexed to, uint256 value);
 
-    function Crowdsale() payable owned() {
+    function Crowdsale() public payable owned() {
         totalSupply = 21000000;
         balanceOf[this] = 5000000;
         balanceOf[owner] = totalSupply - balanceOf[this];
         Transfer(this, owner, balanceOf[owner]);
     }
 
-    function () payable {
+    function () public payable {
         require(balanceOf[this] > 0);
         uint256 tokens = 5000 * msg.value / 1000000000000000000;
         if (tokens > balanceOf[this]) {
@@ -88,7 +88,7 @@ contract Token is Crowdsale {
     event Approval(address indexed owner, address indexed spender, uint256 value);
     event Burned(address indexed owner, uint256 value);
 
-    function Token() payable Crowdsale() {}
+    function Token() public payable Crowdsale() {}
 
     function transfer(address _to, uint256 _value) public {
         require(balanceOf[msg.sender] >= _value);
@@ -127,7 +127,7 @@ contract Token is Crowdsale {
 }
 
 contract MigrationAgent {
-    function migrateFrom(address _from, uint256 _value);
+    function migrateFrom(address _from, uint256 _value) public;
 }
 
 contract TokenMigration is Token {
@@ -137,7 +137,7 @@ contract TokenMigration is Token {
 
     event Migrate(address indexed from, address indexed to, uint256 value);
 
-    function TokenMigration() payable Token() {}
+    function TokenMigration() public payable Token() {}
 
     // Migrate _value of tokens to the new token contract
     function migrate(uint256 _value) external {
@@ -158,7 +158,7 @@ contract TokenMigration is Token {
 }
 
 contract NeuroDAO is TokenMigration {
-    function NeuroDAO() payable TokenMigration() {}
+    function NeuroDAO() public payable TokenMigration() {}
     
     function withdraw() public onlyOwner {
         owner.transfer(this.balance);
