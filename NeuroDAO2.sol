@@ -27,7 +27,7 @@ contract owned {
     address public owner;
     address public newOwner;
 
-    function owned() payable {
+    function owned() public payable {
         owner = msg.sender;
     }
     
@@ -54,11 +54,11 @@ contract owned {
  */
 contract ERC20 {
     uint public totalSupply;
-    function balanceOf(address who) constant returns (uint);
-    function transfer(address to, uint value);
-    function allowance(address owner, address spender) constant returns (uint);
-    function transferFrom(address from, address to, uint value);
-    function approve(address spender, uint value);
+    function balanceOf(address who) public constant returns (uint);
+    function transfer(address to, uint value) public;
+    function allowance(address owner, address spender) public constant returns (uint);
+    function transferFrom(address from, address to, uint value) public;
+    function approve(address spender, uint value) public;
     event Approval(address indexed owner, address indexed spender, uint value);
     event Transfer(address indexed from, address indexed to, uint value);
 }
@@ -86,7 +86,7 @@ contract ManualMigration is owned, ERC20 {
     }
     mapping (address => TokenHolder) public holders;
 
-    function ManualMigration(address _original) payable owned() {
+    function ManualMigration(address _original) public payable owned() {
         original = _original;
         totalSupply = ERC20(original).totalSupply();
         holders[this].balance = ERC20(original).balanceOf(original);
@@ -94,7 +94,7 @@ contract ManualMigration is owned, ERC20 {
         Transfer(this, original, holders[original].balance);
     }
 
-    function migrateManual(address _who, bool _isTeam) onlyOwner {
+    function migrateManual(address _who, bool _isTeam) public onlyOwner {
         require(original != 0);
         require(holders[_who].balance == 0);
         uint balance = ERC20(original).balanceOf(_who);
@@ -104,7 +104,7 @@ contract ManualMigration is owned, ERC20 {
         Transfer(original, _who, balance);
     }
     
-    function sealManualMigration(bool force) onlyOwner {
+    function sealManualMigration(bool force) public onlyOwner {
         require(force || holders[original].balance == 0);
         delete original;
     }
@@ -119,9 +119,9 @@ contract ManualMigration is owned, ERC20 {
 
 contract Crowdsale is ManualMigration {
     
-    function Crowdsale(address _original) payable ManualMigration(_original) {}
+    function Crowdsale(address _original) public payable ManualMigration(_original) {}
 
-    function () payable enabled {
+    function () public payable enabled {
         require(holders[this].balance > 0);
         uint256 tokens = 5000 * msg.value / 1000000000000000000;
         if (tokens > holders[this].balance) {
@@ -143,7 +143,7 @@ contract Crowdsale is ManualMigration {
 contract Token is Crowdsale {
 
     string  public standard    = 'Token 0.1';
-    string  public name        = 'NeuroDAO';
+    string  public name        = 'NeuroDAO 2.0';
     string  public symbol      = "NDAO";
     uint8   public decimals    = 0;
 
@@ -154,7 +154,7 @@ contract Token is Crowdsale {
     event Burned(address indexed owner, uint256 value);
 
     function Token(address _original, uint _startTime)
-        payable Crowdsale(_original) {
+        public payable Crowdsale(_original) {
         startTime = _startTime;    
     }
 
@@ -237,7 +237,7 @@ contract Token is Crowdsale {
 }
 
 contract MigrationAgent {
-    function migrateFrom(address _from, uint256 _value);
+    function migrateFrom(address _from, uint256 _value) public;
 }
 
 contract TokenMigration is Token {
@@ -247,7 +247,7 @@ contract TokenMigration is Token {
 
     event Migrate(address indexed from, address indexed to, uint256 value);
 
-    function TokenMigration(address _original, uint _startTime)
+    function TokenMigration(address _original, uint _startTime) public
         payable Token(_original, _startTime) {}
 
     // Migrate _value of tokens to the new token contract
@@ -273,7 +273,7 @@ contract TokenMigration is Token {
 
 contract NeuroDAO is TokenMigration {
 
-    function NeuroDAO(address _original, uint _startTime)
+    function NeuroDAO(address _original, uint _startTime) public
         payable TokenMigration(_original, _startTime) {}
     
     function withdraw() public onlyOwner {
@@ -310,7 +310,7 @@ contract Adapter is owned {
     mapping (address => bool) public alreadyUsed;
     
     function Adapter(address _neuroDAO, address _erc20contract, address _masterHolder)
-        payable owned() {
+        public payable owned() {
         neuroDAO = _neuroDAO;
         erc20contract = _erc20contract;
         masterHolder = _masterHolder;
