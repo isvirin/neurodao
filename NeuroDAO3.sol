@@ -133,7 +133,7 @@ contract ManualMigration is owned, ERC20, BaseNeuroDAO {
 contract Token is ManualMigration {
 
     string  public standard    = 'Token 0.1';
-    string  public name        = 'NeuroDAO3';
+    string  public name        = 'NeuroDAO 3.0';
     string  public symbol      = "NDAO";
     uint8   public decimals    = 0;
 
