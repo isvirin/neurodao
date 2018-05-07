@@ -20,14 +20,14 @@ IF YOU ARE ENJOYED IT DONATE TO 0x3Ad38D1060d1c350aF29685B2b8Ec3eDE527452B ! :)
 */
 
 
-pragma solidity ^0.4.11;
+pragma solidity ^0.4.19;
 
 contract owned {
 
     address public owner;
     address public candidate;
 
-    function owned() public payable {
+    constructor() public payable {
         owner = msg.sender;
     }
     
@@ -96,7 +96,7 @@ contract Token is owned, ERC20 {
 
     event Burned(address indexed owner, uint256 value);
 
-    function Token() public owned() {}
+    constructor() public owned() {}
 
     function balanceOf(address _who) constant public returns (uint) {
         return holders[_who].balance;
@@ -112,7 +112,7 @@ contract Token is owned, ERC20 {
         if (vesting[_to] < vesting[msg.sender]) {
             vesting[_to] = vesting[msg.sender];
         }
-        Transfer(msg.sender, _to, _value);
+        emit Transfer(msg.sender, _to, _value);
     }
     
     function transferFrom(address _from, address _to, uint256 _value) public {
@@ -124,12 +124,12 @@ contract Token is owned, ERC20 {
         holders[_from].balance -= _value;
         holders[_to].balance += _value;
         allowed[_from][msg.sender] -= _value;
-        Transfer(_from, _to, _value);
+        emit Transfer(_from, _to, _value);
     }
 
     function approve(address _spender, uint256 _value) public {
         allowed[msg.sender][_spender] = _value;
-        Approval(msg.sender, _spender, _value);
+        emit Approval(msg.sender, _spender, _value);
     }
 
     function allowance(address _owner, address _spender) public constant
@@ -142,7 +142,7 @@ contract Token is owned, ERC20 {
         beforeBalanceChanges(msg.sender);
         holders[msg.sender].balance -= _value;
         totalSupply -= _value;
-        Burned(msg.sender, _value);
+        emit Burned(msg.sender, _value);
     }
 }
 
@@ -167,7 +167,7 @@ contract Crowdsale is Token {
     event Mint(address indexed _who, uint _tokens, uint _coinType, bytes32 _txHash);
     event Stage(uint _stage, bool startNotFinish);
 
-    function Crowdsale() public Token() {
+    constructor() public Token() {
         totalSupply = 100000000*100000000;
         holders[this].balance = totalSupply;
     }
@@ -184,7 +184,7 @@ contract Crowdsale is Token {
         startTime = now;
         started = true;
         paymentsCount = 0;
-        Stage(stage, started);
+        emit Stage(stage, started);
     }
     
     function currentTokenPrice() public constant returns(uint) {
@@ -201,7 +201,7 @@ contract Crowdsale is Token {
         require(started);
         started = false;
         lastTokenPriceWei = currentTokenPrice();
-        Stage(stage, started);
+        emit Stage(stage, started);
         ++stage;
     }
     
@@ -225,7 +225,7 @@ contract Crowdsale is Token {
         beforeBalanceChanges(this);
         holders[msg.sender].balance += tokens;
         holders[this].balance -= tokens;
-        Transfer(this, msg.sender, tokens);
+        emit Transfer(this, msg.sender, tokens);
     }
 
     function mintTokens1(address _who, uint _tokens, uint _coinType, bytes32 _txHash) public notSealed {
@@ -242,8 +242,8 @@ contract Crowdsale is Token {
         beforeBalanceChanges(this);
         holders[_who].balance += _tokens;
         holders[this].balance -= _tokens;
-        Mint(_who, _tokens, _coinType, _txHash);
-        Transfer(this, _who, _tokens);
+        emit Mint(_who, _tokens, _coinType, _txHash);
+        emit Transfer(this, _who, _tokens);
     }
     
     // must be called by owners only out of stage
@@ -261,8 +261,8 @@ contract Crowdsale is Token {
         beforeBalanceChanges(this);
         holders[_who].balance += _tokens;
         holders[this].balance -= _tokens;
-        Mint(_who, _tokens, 0, 0);
-        Transfer(this, _who, _tokens);
+        emit Mint(_who, _tokens, 0, 0);
+        emit Transfer(this, _who, _tokens);
     }
 
     // need to seal Crowdsale when it is finished completely
@@ -273,14 +273,14 @@ contract Crowdsale is Token {
 
 contract Ehfirst is Crowdsale {
 
-    function Ehfirst() payable public Crowdsale() {}
+    constructor() payable public Crowdsale() {}
 
     function setBackend(address _backend) public onlyOwner {
         backend = _backend;
     }
     
     function withdraw() public onlyOwner {
-        require(owner.call.gas(3000000).value(this.balance)());
+        require(owner.call.gas(3000000).value(address(this).balance)());
     }
     
     function freezeTheMoment() public onlyOwner {
